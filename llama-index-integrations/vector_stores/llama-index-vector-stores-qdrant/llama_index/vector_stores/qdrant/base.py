@@ -298,6 +298,7 @@ class QdrantVectorStore(BasePydanticVectorStore):
         self,
         node_ids: Optional[List[str]] = None,
         filters: Optional[MetadataFilters] = None,
+        limit: Optional[int] = None,
     ) -> List[BaseNode]:
         """
         Get nodes from the index.
@@ -316,6 +317,10 @@ class QdrantVectorStore(BasePydanticVectorStore):
                     has_id=node_ids,
                 )
             ]
+            # If we pass a node_ids list,
+            # we can limit the search to only those nodes
+            # or less if limit is provided
+            limit = len(node_ids) if limit is None else min(len(node_ids), limit)
 
         if filters is not None:
             filter = self._build_subfilter(filters)
@@ -337,7 +342,7 @@ class QdrantVectorStore(BasePydanticVectorStore):
 
         response = self._client.scroll(
             collection_name=self.collection_name,
-            limit=9999,
+            limit=limit or 9999,
             scroll_filter=filter,
         )
 
@@ -347,6 +352,7 @@ class QdrantVectorStore(BasePydanticVectorStore):
         self,
         node_ids: Optional[List[str]] = None,
         filters: Optional[MetadataFilters] = None,
+        limit: Optional[int] = None,
     ) -> List[BaseNode]:
         """
         Asynchronous method to get nodes from the index.
@@ -365,6 +371,10 @@ class QdrantVectorStore(BasePydanticVectorStore):
                     has_id=node_ids,
                 )
             ]
+            # If we pass a node_ids list,
+            # we can limit the search to only those nodes
+            # or less if limit is provided
+            limit = len(node_ids) if limit is None else min(len(node_ids), limit)
 
         if filters is not None:
             filter = self._build_subfilter(filters)
@@ -377,7 +387,7 @@ class QdrantVectorStore(BasePydanticVectorStore):
 
         response = await self._aclient.scroll(
             collection_name=self.collection_name,
-            limit=9999,
+            limit=limit or 9999,
             scroll_filter=filter,
         )
 
@@ -1070,6 +1080,19 @@ class QdrantVectorStore(BasePydanticVectorStore):
                     FieldCondition(
                         key=subfilter.key,
                         match=MatchAny(any=values),
+                    )
+                )
+            elif subfilter.operator == FilterOperator.NIN:
+                # match none of the values
+                # https://qdrant.tech/documentation/concepts/filtering/#match-except
+                if isinstance(subfilter.value, List):
+                    values = [str(val) for val in subfilter.value]
+                else:
+                    values = str(subfilter.value).split(",")
+                conditions.append(
+                    FieldCondition(
+                        key=subfilter.key,
+                        match=MatchExcept(**{"except": values}),
                     )
                 )
 

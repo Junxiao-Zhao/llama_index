@@ -30,14 +30,14 @@ python_version = "3.12"
 authors = ["Box Developer Relations <dx@box.com>"]
 description = "llama-index readers box integration"
 license = "MIT"
-mainteners = [
+maintainers = [
     "barduinor",
     "shurrey",
 ]
 name = "llama-index-readers-box"
 packages = [{include = "llama_index/"}]
 readme = "README.md"
-version = "0.1.0"
+version = "0.1.1"
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
